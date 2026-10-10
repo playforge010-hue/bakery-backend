@@ -542,3 +542,8 @@ Verification:
 
 - Set the Railpack runtime `PORT` default to 8000 to match the backend public domain's target port after the live health endpoint returned Railway 502 while FrankenPHP reported its server running.
 - The frontend's local environment now targets the Railway API. Public health and home API responses must be rechecked after the backend redeploys; Railway deploy logs remain the source of truth if 502 persists.
+
+### 2026-10-10 - MySQL driver and Railway port correction
+
+- Railway's automatically detected target port 8080 restored the live health endpoint, so removed the hardcoded port-8000 image default and environment example.
+- Live public catalog and bootstrap endpoints still returned 500 while the database-free health endpoint returned 200. Declared the MySQL PDO extension explicitly for the Railway PHP image; deployment logs are still needed to confirm whether a missing driver or database configuration is the actual 500 cause.
