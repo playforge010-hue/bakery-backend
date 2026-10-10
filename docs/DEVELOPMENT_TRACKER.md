@@ -515,3 +515,9 @@ Verification:
 - Prevented the demo catalog seeder from running under `APP_ENV=production`.
 - Production customer OTP delivery remains blocked until an SMS provider is connected. The production example deliberately selects a non-log driver so the API fails closed instead of logging live OTPs.
 - Verification: PHP syntax and API configuration checks completed. Automated tests were not run, per the project instruction.
+
+### 2026-10-10 - Railway environment copy template
+
+- Made `.env.example` the Railway backend Raw Editor template with the configured API domain, port, MySQL service references, image URL, logging, and safe production defaults. Kept `.env.local.example` for local setup and aligned Composer's local setup scripts with it.
+- Documented the required private `APP_KEY`, exact frontend CORS origin, persistent upload storage, and the current SMS, mail, and Reverb limitations in the README. Removed the duplicate production example to avoid conflicting templates.
+- Verification: environment keys and Composer JSON checked; no automated tests were run, per the project instruction.
