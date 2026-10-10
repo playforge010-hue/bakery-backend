@@ -531,3 +531,9 @@ Verification:
 
 - Added a minimal `railpack.json` overlay to include `libatomic1` in Railpack's Apt packages without replacing its defaults. The PHP builder carries its Apt packages into the final runtime image.
 - Verification: JSON syntax and Git diff checked; hosted rebuild is needed to verify Railway's package installation.
+
+### 2026-10-10 - Remove unused backend Vite build
+
+- Removed the backend's unused `package.json`, lockfile, and Vite configuration after Railway attempted to compile a missing `resources/css/app.css` entry point. This is an API-only repository; the customer/admin Next.js build remains in the frontend repository.
+- Removed obsolete npm steps from Composer's local setup/development scripts so Railpack will build only the Laravel application.
+- Verification: Composer JSON and PHP route configuration checked; hosted rebuild is needed to confirm the Railway build. No automated tests were run, per the project instruction.

@@ -9,6 +9,8 @@ Laravel 12 API for Dwarkesh Bakers. The Next.js website is maintained in the sep
 3. Run `php artisan migrate` and `php artisan storage:link`.
 4. Run `php artisan serve --host=0.0.0.0 --port=8000`.
 
+This repository serves only the Laravel API; the Next.js site has its own repository and build. No Node.js/Vite build is needed here.
+
 The local demo catalog can be loaded with `php artisan db:seed`. It is disabled when `APP_ENV=production`.
 
 ## Production configuration
