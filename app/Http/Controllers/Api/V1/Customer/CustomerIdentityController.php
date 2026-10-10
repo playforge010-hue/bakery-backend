@@ -36,8 +36,14 @@ class CustomerIdentityController extends CustomerApiControllerBase
         if ($purpose === 'login' && ! $userExists) {
             return $this->errorResponse('No account found. Register first.', [], [], 404);
         }
-        $otp = app()->environment('local', 'testing') ? '123456' : (string) random_int(100000, 999999);
-        if (config('services.customer_otp.driver', 'log') !== 'log') {
+        $testMobileNumber = (string) config('services.customer_otp.test_mobile_number', '');
+        $isTestMobileNumber = $testMobileNumber !== ''
+            && hash_equals($testMobileNumber, $mobileNumber);
+        $otp = $isTestMobileNumber || app()->environment('local', 'testing')
+            ? (string) config('services.customer_otp.test_code', '123456')
+            : (string) random_int(100000, 999999);
+
+        if (! $isTestMobileNumber && config('services.customer_otp.driver', 'log') !== 'log') {
             return $this->errorResponse(
                 'The configured SMS provider is not implemented. Configure a supported OTP delivery service before enabling production login.',
                 [],
@@ -56,7 +62,11 @@ class CustomerIdentityController extends CustomerApiControllerBase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        Log::info('Customer login OTP issued through local log driver.', ['mobile_number' => $mobileNumber, 'otp' => $otp]);
+        if (! $isTestMobileNumber) {
+            Log::info('Customer login OTP issued through local log driver.', [
+                'mobile_number' => $mobileNumber,
+            ]);
+        }
 
         return $this->successResponse('OTP issued successfully.', [
             'mobile_number' => $mobileNumber,
