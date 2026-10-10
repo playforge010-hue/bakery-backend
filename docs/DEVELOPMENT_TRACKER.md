@@ -537,3 +537,8 @@ Verification:
 - Removed the backend's unused `package.json`, lockfile, and Vite configuration after Railway attempted to compile a missing `resources/css/app.css` entry point. This is an API-only repository; the customer/admin Next.js build remains in the frontend repository.
 - Removed obsolete npm steps from Composer's local setup/development scripts so Railpack will build only the Laravel application.
 - Verification: Composer JSON and PHP route configuration checked; hosted rebuild is needed to confirm the Railway build. No automated tests were run, per the project instruction.
+
+### 2026-10-10 - Railway public port alignment
+
+- Set the Railpack runtime `PORT` default to 8000 to match the backend public domain's target port after the live health endpoint returned Railway 502 while FrankenPHP reported its server running.
+- The frontend's local environment now targets the Railway API. Public health and home API responses must be rechecked after the backend redeploys; Railway deploy logs remain the source of truth if 502 persists.

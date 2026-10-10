@@ -1,4 +1,9 @@
 {
     "$schema": "https://schema.railpack.com",
-    "buildAptPackages": ["...", "libatomic1"]
+    "buildAptPackages": ["...", "libatomic1"],
+    "deploy": {
+        "variables": {
+            "PORT": "8000"
+        }
+    }
 }
