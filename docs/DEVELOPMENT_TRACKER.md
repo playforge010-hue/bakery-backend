@@ -574,6 +574,11 @@ Verification:
 
 ### 2026-10-11 - Use Railway private MySQL URL
 
-- Confirmed the MySQL service exposes `MYSQL_PRIVATE_URL` and Laravel's existing MySQL configuration accepts `DB_URL`. Switched the production `.env.example` to one private URL reference instead of five separate database variable references.
+- Initially assumed the MySQL service exposed `MYSQL_PRIVATE_URL`; the user later supplied its actual variable list, which showed only `MYSQL_URL`. Laravel's existing MySQL configuration accepts `DB_URL`, so one connection URL still replaces five separate database variable references.
 - Preserved the generated local private Railway copy's application key while updating its database block. Updated the database readiness check to classify the resolved connection's host and port, including when `DB_URL` supplies them.
-- Railway backend Variables still require `DB_URL` to be linked to `MySQL.MYSQL_PRIVATE_URL` and deployed; no Railway CLI authentication is available in this workspace.
+- Railway backend Variables require `DB_URL` to be linked to the MySQL service's actual URL variable and deployed; no Railway CLI authentication is available in this workspace. The later correction identifies that variable as `MySQL.MYSQL_URL`.
+
+### 2026-10-11 - Match actual Railway MySQL variable
+
+- The user's MySQL service variable list confirms `MYSQL_URL` is defined as a private-network MySQL URL, while `MYSQL_PRIVATE_URL` does not exist. Corrected `.env.example`, the ignored local Railway copy, and the README to reference `MySQL.MYSQL_URL`.
+- The user disclosed the current MySQL root password and Laravel application key in chat. Regenerated the ignored local Railway copy's application key without printing it. Railway's managed database password must be regenerated in Railway's Database View and the dependent backend redeployed; neither secret belongs in Git or public logs.
