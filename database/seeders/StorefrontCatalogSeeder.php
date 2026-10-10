@@ -4,16 +4,13 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
-class StorefrontDemoSeeder extends Seeder
+class StorefrontCatalogSeeder extends Seeder
 {
     private const IMAGE_DIRECTORY = 'demo-catalog';
 
     public function run(): void
     {
-        $this->copySeedImagesToPublicStorage();
-
         DB::transaction(function (): void {
             $now = now();
             $categories = $this->seedCategories($now);
@@ -796,32 +793,6 @@ class StorefrontDemoSeeder extends Seeder
     private function imagePath(string $filename): string
     {
         return self::IMAGE_DIRECTORY.'/'.$filename;
-    }
-
-    private function copySeedImagesToPublicStorage(): void
-    {
-        $filenames = [
-            'bakery-pastries.jpg',
-            'birthday-cake.jpg',
-            'chocolate-berry-cake.jpg',
-            'chocolate-cake.jpg',
-            'croissant-basket.jpg',
-            'cupcake-display.jpg',
-            'samosa.jpg',
-        ];
-
-        foreach ($filenames as $filename) {
-            $sourcePath = database_path('seeders/assets/'.self::IMAGE_DIRECTORY.'/'.$filename);
-
-            if (! is_file($sourcePath)) {
-                throw new \RuntimeException('Missing demo catalog image: '.$sourcePath);
-            }
-
-            Storage::disk('public')->put(
-                $this->imagePath($filename),
-                file_get_contents($sourcePath)
-            );
-        }
     }
 
     private function shortDescription(array $definition): string

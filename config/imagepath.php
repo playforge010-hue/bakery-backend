@@ -4,6 +4,10 @@ return [
     'disk' => env('IMAGE_DISK', 'public'),
     'base_url' => env('IMAGE_BASE_URL', env('APP_URL').'/storage'),
     'public_base_url' => env('IMAGE_BASE_URL'),
+    'bundled_catalog' => [
+        'prefix' => 'demo-catalog/',
+        'base_url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/demo-catalog',
+    ],
     'business' => [
         'logo' => 'bakery/logo',
         'cover' => 'bakery/cover',

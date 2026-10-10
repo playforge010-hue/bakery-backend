@@ -582,3 +582,17 @@ Verification:
 
 - The user's MySQL service variable list confirms `MYSQL_URL` is defined as a private-network MySQL URL, while `MYSQL_PRIVATE_URL` does not exist. Corrected `.env.example`, the ignored local Railway copy, and the README to reference `MySQL.MYSQL_URL`.
 - The user disclosed the current MySQL root password and Laravel application key in chat. Regenerated the ignored local Railway copy's application key without printing it. Railway's managed database password must be regenerated in Railway's Database View and the dependent backend redeployed; neither secret belongs in Git or public logs.
+
+### 2026-10-11 - Railway project-scoped database configuration
+
+- Confirmed the backend and original MySQL service were created in separate Railway projects. The private MySQL hostname cannot resolve across that boundary, explaining the database connection error even after host and port were populated.
+- Updated the ignored `.env.railway.copy` to use only `DB_CONNECTION=mysql` and `DB_URL=${{MySQL.MYSQL_URL}}` for the database. Removed its obsolete literal database credentials and host. The tracked `.env.example` already uses this reference.
+- The backend project needs its own MySQL service, then the backend service's Railway Variables must reference that service's `MYSQL_URL`. Railway CLI authentication is unavailable here, so the live variables have not been changed. After deploying the variable change, run production migrations and check `/api/v1/health/database`.
+- Verification: inspected Laravel's existing `config/database.php` URL handling, confirmed the private env copy is Git-ignored, and checked that it contains only the two intended database variables. No application tests were needed for this environment-template change.
+
+### 2026-10-11 - Production storefront catalog seed and bundled images
+
+- The live database health and homepage endpoints now return 200, but the catalog is empty. Confirmed the local database contains 6 categories, 10 products, 17 product-image records, 25 variants, 5 flavours, 3 add-ons, 1 banner, 7 opening-hour rows, and 12 delivery slots. The existing seed definitions and all 7 image assets match the local catalog; customer and order records are intentionally excluded.
+- Made the repeatable `StorefrontCatalogSeeder` available through `php artisan db:seed --force` in production. It preserves existing catalog entries and business settings, and creates no user credentials or orders.
+- Moved the 7 bundled catalog photos into `public/demo-catalog` and made `ImagePath` resolve seed image paths to these static assets. This keeps the sample images available after redeploys without relying on ephemeral Laravel storage. Admin uploads still require persistent storage.
+- Verification: PHP syntax checks passed for changed files, the local seeder completed successfully, and the local image audit found every referenced seed image. Hosted seeding still requires running the Artisan command in the Railway backend console because the Railway CLI is not authenticated here.

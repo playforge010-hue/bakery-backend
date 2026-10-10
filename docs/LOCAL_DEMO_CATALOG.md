@@ -1,7 +1,8 @@
-# Local demo catalog
+# Storefront catalog seed
 
-Run `php artisan db:seed` to add the storefront demo catalog. The seeder is safe to
-run more than once and does not create customers, orders, payments, reviews, or
+Run `php artisan db:seed` locally or `php artisan db:seed --force` on Railway after
+migrations complete. The seeder is safe to run more than once and does not create
+customers, orders, payments, reviews, or
 dashboard activity. It leaves existing business settings and catalog entries in
 place.
 
@@ -16,9 +17,10 @@ bakery's actual menu and pricing in the admin before taking real orders.
 
 ## Image sources
 
-Images are stored in `database/seeders/assets/demo-catalog` and copied to Laravel
-public storage when the seeder runs. They are local assets at runtime, so the
-storefront does not depend on an image CDN being available.
+Images are bundled in `public/demo-catalog`. Seeded image paths resolve to those
+static assets, so they remain available after Railway redeployments without a
+storage symlink. Admin-uploaded images use Laravel's public disk and still need
+persistent storage for production.
 
 - `chocolate-berry-cake.jpg` — [Unsplash chocolate cake with strawberries](https://unsplash.com/photos/a-chocolate-cake-with-strawberries-on-top-HmssZtWo_f8)
 - `croissant-basket.jpg` — [Unsplash basket of croissants and pastries](https://unsplash.com/photos/a-basket-filled-with-croissants-and-other-pastries-_ZrT9thWCxU)

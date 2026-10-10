@@ -17,6 +17,14 @@ final class ImagePath
             return $path;
         }
 
+        $bundledCatalog = config('imagepath.bundled_catalog');
+
+        if (Str::startsWith($path, $bundledCatalog['prefix'])) {
+            $filename = Str::after($path, $bundledCatalog['prefix']);
+
+            return rtrim($bundledCatalog['base_url'], '/').'/'.$filename;
+        }
+
         $configuredBaseUrl = config('imagepath.public_base_url');
 
         if ($configuredBaseUrl) {
