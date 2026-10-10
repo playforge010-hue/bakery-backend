@@ -565,3 +565,9 @@ Verification:
 - Added a separate GET `/api/v1/health/database` check that reports whether the MySQL connection and required catalog tables are ready. It returns only SQLSTATE/driver codes or missing table names on failure; no connection strings or credentials are exposed. This is separate from the liveness route so a database outage does not mask whether the HTTP process is running.
 - The probe supports diagnosing the hosted 500 response without enabling `APP_DEBUG` in production or exposing the full exception to the browser.
 - The live probe returned SQLSTATE `HY000` / MySQL driver code `2002`, confirming a connection failure. Added only a host classification and port to the response to identify whether Railway is still using loopback, an unresolved template, or its private network; the hostname and credentials remain hidden.
+- Railway runtime logs confirmed `Host: , Port: , Database: ` are all empty. This is unresolved or empty Railway database service references, not a catalog query defect. The backend's Railway CLI is unauthenticated, so the database service and backend Variables must be corrected in the user's Railway project. The live API remains unavailable until then.
+
+### 2026-10-11 - Railway migration configuration correction
+
+- Railway's current documentation states that new services cannot opt into legacy `railway.json` config as code. The live deployment succeeded while database variables were empty, confirming the committed pre-deploy migration was not enforced by this service. Removed the ineffective file and documented the required backend service Settings → Deploy pre-deploy command.
+- The copied Railway log showed empty database host, port, and database name. The backend Variables must reference a running MySQL service with the correct exact service name in the same project environment before migrations can run.
