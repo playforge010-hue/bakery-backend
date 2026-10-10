@@ -553,3 +553,9 @@ Verification:
 - Updated the public `.env.example` for the actual API domain, valid Railway MySQL variable references, current local and mobile CORS origins, and safe log-based broadcast and mail defaults. Removed unused blank Reverb and SMTP settings to avoid suggesting those integrations are configured.
 - Prepared a Git-ignored `.env.railway.copy` locally with a unique generated `APP_KEY` for the Railway Raw Editor. The secret is intentionally absent from the public example and Git history.
 - The hosted environment still needs the copied variables applied and redeployed. The existing production SMS driver has no provider, live Reverb is not configured, and uploaded files need persistent storage before the full site can be considered production ready.
+
+### 2026-10-11 - Railway database migration on deploy
+
+- Verified the public health route returns 200 and the corrected CORS origin is active, while catalog and bootstrap routes still return 500. These failing routes query MySQL, but the public response does not expose the database exception.
+- Added Railway's supported pre-deploy migration command so fresh deployments apply the schema before serving traffic, or fail with a clear migration/database error in the pre-deploy logs. This requires the Railway MySQL service references to resolve and the database to be reachable.
+- Verification: checked the JSON configuration and public routes; hosted deployment results still need to be observed. No automated tests were run, per the user's instruction.
