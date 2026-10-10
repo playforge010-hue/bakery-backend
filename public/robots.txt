@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /product/
+Allow: /my-orders
+
+# Strictly Block Admin Panel and Internal Routes from Search Engine Indexing
+Disallow: /admin/
+Disallow: /admin
+Disallow: /customer/login
+Disallow: /notifications/
+Disallow: /cart/
+Disallow: /order/
+
+Sitemap: http://127.0.0.1:8000/sitemap.xml
