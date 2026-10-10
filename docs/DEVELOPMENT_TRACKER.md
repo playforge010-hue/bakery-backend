@@ -521,3 +521,8 @@ Verification:
 - Made `.env.example` the Railway backend Raw Editor template with the configured API domain, port, MySQL service references, image URL, logging, and safe production defaults. Kept `.env.local.example` for local setup and aligned Composer's local setup scripts with it.
 - Documented the required private `APP_KEY`, exact frontend CORS origin, persistent upload storage, and the current SMS, mail, and Reverb limitations in the README. Removed the duplicate production example to avoid conflicting templates.
 - Verification: environment keys and Composer JSON checked; no automated tests were run, per the project instruction.
+
+### 2026-10-10 - Railway GD build fix
+
+- Declared the GD PHP extension in Composer's root requirements because the locked PDF dependency requires it. Railpack reads root platform requirements when provisioning PHP extensions, so the Railway build should install GD before running Composer.
+- Verification: Composer configuration and lockfile validation completed; no automated tests were run, per the project instruction. Railway rebuild is needed to confirm the hosted environment.
