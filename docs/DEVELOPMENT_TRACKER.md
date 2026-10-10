@@ -526,3 +526,8 @@ Verification:
 
 - Declared the GD PHP extension in Composer's root requirements because the locked PDF dependency requires it. Railpack reads root platform requirements when provisioning PHP extensions, so the Railway build should install GD before running Composer.
 - Verification: Composer configuration and lockfile validation completed; no automated tests were run, per the project instruction. Railway rebuild is needed to confirm the hosted environment.
+
+### 2026-10-10 - Railway libatomic1 package
+
+- Added a minimal `railpack.json` overlay to include `libatomic1` in Railpack's Apt packages without replacing its defaults. The PHP builder carries its Apt packages into the final runtime image.
+- Verification: JSON syntax and Git diff checked; hosted rebuild is needed to verify Railway's package installation.
