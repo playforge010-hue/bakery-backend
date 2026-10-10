@@ -45,6 +45,14 @@ Route::get('/v1/health/database', function () {
     } catch (QueryException $exception) {
         report($exception);
 
+        $databaseHost = (string) config('database.connections.mysql.host');
+        $hostType = match (true) {
+            str_contains($databaseHost, '${{') => 'unresolved_reference',
+            in_array($databaseHost, ['127.0.0.1', 'localhost', '::1'], true) => 'loopback',
+            str_ends_with($databaseHost, '.railway.internal') => 'railway_private',
+            default => 'other',
+        };
+
         return response()->json([
             'success' => false,
             'message' => 'Database connection is unavailable.',
@@ -52,6 +60,8 @@ Route::get('/v1/health/database', function () {
             'meta' => [
                 'sqlstate' => $exception->errorInfo[0] ?? null,
                 'driver_code' => $exception->errorInfo[1] ?? null,
+                'host_type' => $hostType,
+                'port' => (int) config('database.connections.mysql.port'),
             ],
         ], 503);
     }

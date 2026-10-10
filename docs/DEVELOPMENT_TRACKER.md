@@ -564,3 +564,4 @@ Verification:
 
 - Added a separate GET `/api/v1/health/database` check that reports whether the MySQL connection and required catalog tables are ready. It returns only SQLSTATE/driver codes or missing table names on failure; no connection strings or credentials are exposed. This is separate from the liveness route so a database outage does not mask whether the HTTP process is running.
 - The probe supports diagnosing the hosted 500 response without enabling `APP_DEBUG` in production or exposing the full exception to the browser.
+- The live probe returned SQLSTATE `HY000` / MySQL driver code `2002`, confirming a connection failure. Added only a host classification and port to the response to identify whether Railway is still using loopback, an unresolved template, or its private network; the hostname and credentials remain hidden.
