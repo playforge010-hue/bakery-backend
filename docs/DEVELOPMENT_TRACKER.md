@@ -571,3 +571,9 @@ Verification:
 
 - Railway's current documentation states that new services cannot opt into legacy `railway.json` config as code. The live deployment succeeded while database variables were empty, confirming the committed pre-deploy migration was not enforced by this service. Removed the ineffective file and documented the required backend service Settings → Deploy pre-deploy command.
 - The copied Railway log showed empty database host, port, and database name. The backend Variables must reference a running MySQL service with the correct exact service name in the same project environment before migrations can run.
+
+### 2026-10-11 - Use Railway private MySQL URL
+
+- Confirmed the MySQL service exposes `MYSQL_PRIVATE_URL` and Laravel's existing MySQL configuration accepts `DB_URL`. Switched the production `.env.example` to one private URL reference instead of five separate database variable references.
+- Preserved the generated local private Railway copy's application key while updating its database block. Updated the database readiness check to classify the resolved connection's host and port, including when `DB_URL` supplies them.
+- Railway backend Variables still require `DB_URL` to be linked to `MySQL.MYSQL_PRIVATE_URL` and deployed; no Railway CLI authentication is available in this workspace.

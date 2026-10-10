@@ -45,7 +45,7 @@ Route::get('/v1/health/database', function () {
     } catch (QueryException $exception) {
         report($exception);
 
-        $databaseHost = (string) config('database.connections.mysql.host');
+        $databaseHost = (string) DB::connection()->getConfig('host');
         $hostType = match (true) {
             str_contains($databaseHost, '${{') => 'unresolved_reference',
             in_array($databaseHost, ['127.0.0.1', 'localhost', '::1'], true) => 'loopback',
@@ -61,7 +61,7 @@ Route::get('/v1/health/database', function () {
                 'sqlstate' => $exception->errorInfo[0] ?? null,
                 'driver_code' => $exception->errorInfo[1] ?? null,
                 'host_type' => $hostType,
-                'port' => (int) config('database.connections.mysql.port'),
+                'port' => (int) DB::connection()->getConfig('port'),
             ],
         ], 503);
     }
