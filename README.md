@@ -26,4 +26,4 @@ Railway runs `php artisan migrate --force --no-interaction` before each deployme
 
 **Production blocker:** customer OTP delivery currently supports only the local log driver. The application returns 503 for a non-log driver. Connect an SMS provider before enabling customer registration and login in production; do not use log-delivered OTPs on a public deployment.
 
-The API health route is `/api/v1/health`. Project standards and development status are in `docs/`.
+The API health route is `/api/v1/health`. `/api/v1/health/database` checks the database connection and required catalog tables without returning credentials or hostnames. Project standards and development status are in `docs/`.

@@ -19,7 +19,10 @@ use App\Http\Controllers\Api\V1\Customer\CustomerIdentityController;
 use App\Http\Controllers\Api\V1\Customer\CustomerLocationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\CustomerSupportController;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 
 Route::get('/v1/health', function () {
     return [
@@ -28,6 +31,46 @@ Route::get('/v1/health', function () {
         'data' => ['service' => 'dwarkesh-bakers-api'],
         'meta' => (object) [],
     ];
+});
+
+Route::get('/v1/health/database', function () {
+    try {
+        DB::select('SELECT 1');
+
+        $requiredTables = ['business_settings', 'banners', 'product_categories', 'products'];
+        $missingTables = array_values(array_filter(
+            $requiredTables,
+            fn (string $table): bool => ! Schema::hasTable($table)
+        ));
+    } catch (QueryException $exception) {
+        report($exception);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Database connection is unavailable.',
+            'errors' => (object) [],
+            'meta' => [
+                'sqlstate' => $exception->errorInfo[0] ?? null,
+                'driver_code' => $exception->errorInfo[1] ?? null,
+            ],
+        ], 503);
+    }
+
+    if ($missingTables !== []) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Database schema is incomplete.',
+            'errors' => (object) [],
+            'meta' => ['missing_tables' => $missingTables],
+        ], 503);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Database is ready.',
+        'data' => ['connection' => 'mysql', 'schema' => 'ready'],
+        'meta' => (object) [],
+    ]);
 });
 
 Route::get('/v1/app/bootstrap', [CustomerCatalogController::class, 'getAppBootstrap']);

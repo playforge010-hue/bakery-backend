@@ -559,3 +559,8 @@ Verification:
 - Verified the public health route returns 200 and the corrected CORS origin is active, while catalog and bootstrap routes still return 500. These failing routes query MySQL, but the public response does not expose the database exception.
 - Added Railway's supported pre-deploy migration command so fresh deployments apply the schema before serving traffic, or fail with a clear migration/database error in the pre-deploy logs. This requires the Railway MySQL service references to resolve and the database to be reachable.
 - Verification: checked the JSON configuration and public routes; hosted deployment results still need to be observed. No automated tests were run, per the user's instruction.
+
+### 2026-10-11 - Safe database readiness probe
+
+- Added a separate GET `/api/v1/health/database` check that reports whether the MySQL connection and required catalog tables are ready. It returns only SQLSTATE/driver codes or missing table names on failure; no connection strings or credentials are exposed. This is separate from the liveness route so a database outage does not mask whether the HTTP process is running.
+- The probe supports diagnosing the hosted 500 response without enabling `APP_DEBUG` in production or exposing the full exception to the browser.
