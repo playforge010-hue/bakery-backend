@@ -596,3 +596,9 @@ Verification:
 - Made the repeatable `StorefrontCatalogSeeder` available through `php artisan db:seed --force` in production. It preserves existing catalog entries and business settings, and creates no user credentials or orders.
 - Moved the 7 bundled catalog photos into `public/demo-catalog` and made `ImagePath` resolve seed image paths to these static assets. This keeps the sample images available after redeploys without relying on ephemeral Laravel storage. Admin uploads still require persistent storage.
 - Verification: PHP syntax checks passed for changed files, the local seeder completed successfully, and the local image audit found every referenced seed image. Hosted seeding still requires running the Artisan command in the Railway backend console because the Railway CLI is not authenticated here.
+
+### 2026-10-11 - Railway file and stream error logging
+
+- Changed the production environment template to use a Laravel log stack with stderr and daily files. Errors at warning level and above will be available in Railway logs and under `/app/storage/logs/laravel-YYYY-MM-DD.log` once the backend service variables are updated and deployed.
+- Persistent log history requires a Railway volume mounted at `/app/storage/logs`; otherwise the container filesystem is ephemeral. Expected validation/authentication failures remain HTTP responses rather than log exceptions.
+- Railway CLI is unauthenticated in this workspace, so the live service variables and volume still require dashboard setup.
