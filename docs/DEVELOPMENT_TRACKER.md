@@ -547,3 +547,9 @@ Verification:
 
 - Railway's automatically detected target port 8080 restored the live health endpoint, so removed the hardcoded port-8000 image default and environment example.
 - Live public catalog and bootstrap endpoints still returned 500 while the database-free health endpoint returned 200. Declared the MySQL PDO extension explicitly for the Railway PHP image; deployment logs are still needed to confirm whether a missing driver or database configuration is the actual 500 cause.
+
+### 2026-10-11 - Railway environment copy correction
+
+- Updated the public `.env.example` for the actual API domain, valid Railway MySQL variable references, current local and mobile CORS origins, and safe log-based broadcast and mail defaults. Removed unused blank Reverb and SMTP settings to avoid suggesting those integrations are configured.
+- Prepared a Git-ignored `.env.railway.copy` locally with a unique generated `APP_KEY` for the Railway Raw Editor. The secret is intentionally absent from the public example and Git history.
+- The hosted environment still needs the copied variables applied and redeployed. The existing production SMS driver has no provider, live Reverb is not configured, and uploaded files need persistent storage before the full site can be considered production ready.
