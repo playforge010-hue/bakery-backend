@@ -40,8 +40,7 @@ class CustomerCatalogController extends CustomerApiControllerBase
             'features' => [
                 'delivery_available' => (bool) ($business?->delivery_available ?? false),
                 'takeaway_available' => (bool) ($business?->takeaway_available ?? false),
-                'otp_login_enabled' => app()->environment('local', 'testing')
-                    && config('services.customer_otp.driver', 'log') === 'log',
+                'otp_login_enabled' => (string) config('services.customer_otp.test_mobile_number', '') !== '',
                 // Online methods stay hidden until a payment provider can verify capture.
                 'online_payment_available' => false,
                 'upi_available' => false,

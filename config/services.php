@@ -4,7 +4,7 @@ return [
 
     'customer_otp' => [
         'driver' => env('CUSTOMER_OTP_DRIVER', 'log'),
-        'test_mobile_number' => env('CUSTOMER_OTP_TEST_MOBILE'),
+        'test_mobile_number' => env('CUSTOMER_OTP_TEST_MOBILE', '9870004055'),
         'test_code' => env('CUSTOMER_OTP_TEST_CODE', '123456'),
     ],
 
