@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Customer;
 use App\Http\Requests\Api\V1\Customer\SendCustomerOtpRequest;
 use App\Http\Requests\Api\V1\Customer\UpdateCustomerProfileRequest;
 use App\Http\Requests\Api\V1\Customer\VerifyCustomerOtpRequest;
+use App\Http\Requests\Api\V1\Mobile\SendMobileOtpRequest;
+use App\Http\Requests\Api\V1\Mobile\VerifyMobileOtpRequest;
 use App\Models\User;
 use App\Support\ImagePath;
 use Carbon\Carbon;
@@ -21,9 +23,34 @@ class CustomerIdentityController extends CustomerApiControllerBase
     /** Issue a rate-limited customer login or registration OTP. */
     public function sendOtp(SendCustomerOtpRequest $request): JsonResponse
     {
+        return $this->issueOtp($request, false);
+    }
+
+    /** Issue a rate-limited OTP through the dedicated mobile-app API. */
+    public function sendMobileOtp(SendMobileOtpRequest $request): JsonResponse
+    {
+        return $this->issueOtp($request, true);
+    }
+
+    /** Verify a customer OTP and issue a customer-web Sanctum token. */
+    public function verifyOtp(VerifyCustomerOtpRequest $request): JsonResponse
+    {
+        return $this->verifyCustomerOtp($request, false);
+    }
+
+    /** Verify a customer OTP and issue a mobile-only Sanctum token. */
+    public function verifyMobileOtp(VerifyMobileOtpRequest $request): JsonResponse
+    {
+        return $this->verifyCustomerOtp($request, true);
+    }
+
+    /** Apply the shared customer OTP issue policy to the selected client. */
+    private function issueOtp(SendCustomerOtpRequest $request, bool $isMobileClient): JsonResponse
+    {
         $validated = $request->validated();
         $mobileNumber = (string) $validated['mobile_number'];
-        $limiterKey = 'customer-otp:'.$mobileNumber.'|'.$request->ip();
+        $clientPrefix = $isMobileClient ? 'mobile-customer-otp:' : 'customer-otp:';
+        $limiterKey = $clientPrefix.$mobileNumber.'|'.$request->ip();
         if (RateLimiter::tooManyAttempts($limiterKey, 3)) {
             return $this->errorResponse('Too many OTP requests. Try again later.', [], ['retry_after_seconds' => RateLimiter::availableIn($limiterKey)], 429);
         }
@@ -75,8 +102,11 @@ class CustomerIdentityController extends CustomerApiControllerBase
         ], [], 202);
     }
 
-    /** Verify the latest customer OTP and issue a Sanctum token. */
-    public function verifyOtp(VerifyCustomerOtpRequest $request): JsonResponse
+    /** Verify the latest OTP and issue a token scoped to the requesting client. */
+    private function verifyCustomerOtp(
+        VerifyCustomerOtpRequest $request,
+        bool $isMobileClient
+    ): JsonResponse
     {
         $validated = $request->validated();
         $mobileNumber = (string) $validated['mobile_number'];
@@ -125,7 +155,11 @@ class CustomerIdentityController extends CustomerApiControllerBase
             $user->forceFill(['last_login_at' => now()])->save();
         }
 
-        $token = $user->createToken('customer-web', ['customer-access'])->plainTextToken;
+        $tokenName = $isMobileClient ? 'dwarkesh-mobile' : 'customer-web';
+        $tokenAbilities = $isMobileClient
+            ? ['mobile-customer-access', 'mobile:read', 'mobile:write']
+            : ['customer-access'];
+        $token = $user->createToken($tokenName, $tokenAbilities)->plainTextToken;
 
         return $this->successResponse('OTP verified successfully.', [
             'token' => $token,

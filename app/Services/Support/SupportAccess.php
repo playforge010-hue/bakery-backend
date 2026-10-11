@@ -21,7 +21,10 @@ class SupportAccess
 
     public static function isCustomer(User $user): bool
     {
-        return $user->is_active && $user->role === 'customer' && $user->tokenCan('customer-access');
+        $hasCustomerAccess = $user->tokenCan('customer-access')
+            || ($user->tokenCan('mobile-customer-access') && $user->tokenCan('mobile:read'));
+
+        return $user->is_active && $user->role === 'customer' && $hasCustomerAccess;
     }
 
     public static function canViewTicket(User $user, string $ticketNumber): bool

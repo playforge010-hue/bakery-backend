@@ -14,7 +14,10 @@ Broadcast::channel('admin.orders', function (User $user): bool {
 });
 
 Broadcast::channel('orders.{orderNumber}', function (User $user, string $orderNumber): bool {
-    if ($user->role !== 'customer' || ! $user->is_active || ! $user->tokenCan('customer-access')) {
+    $hasCustomerAccess = $user->tokenCan('customer-access')
+        || ($user->tokenCan('mobile-customer-access') && $user->tokenCan('mobile:read'));
+
+    if ($user->role !== 'customer' || ! $user->is_active || ! $hasCustomerAccess) {
         return false;
     }
 

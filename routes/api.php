@@ -95,6 +95,59 @@ Route::post('/v1/auth/send-otp', [CustomerIdentityController::class, 'sendOtp'])
 Route::post('/v1/auth/verify-otp', [CustomerIdentityController::class, 'verifyOtp']);
 Route::post('/v1/admin/auth/login-admin', [AdminAuthController::class, 'loginAdmin']);
 
+Route::prefix('v1/mobile')->group(function () {
+    Route::get('/app/bootstrap', [CustomerCatalogController::class, 'getAppBootstrap']);
+    Route::get('/home/get-home-data', [CustomerCatalogController::class, 'getHomeData']);
+    Route::get('/categories/get-category-list', [CustomerCatalogController::class, 'getCategoryList']);
+    Route::get('/offers/get-offer-list', [CustomerCatalogController::class, 'getMobileOfferList']);
+    Route::get('/products/get-product-list', [CustomerCatalogController::class, 'getProductList']);
+    Route::get('/products/get-product-detail', [CustomerCatalogController::class, 'getProductDetail']);
+    Route::get('/products/get-product-order-options', [CustomerCheckoutController::class, 'getProductOrderOptions']);
+    Route::post('/location/search-area', [CustomerLocationController::class, 'searchDeliveryArea']);
+    Route::post('/location/check-delivery-availability', [CustomerDeliveryPricingController::class, 'checkDeliveryAvailability']);
+    Route::post('/auth/send-otp', [CustomerIdentityController::class, 'sendMobileOtp']);
+    Route::post('/auth/verify-otp', [CustomerIdentityController::class, 'verifyMobileOtp']);
+
+    Route::middleware(['auth:sanctum', 'customer.role'])->group(function () {
+        Route::middleware('ability:mobile-customer-access,mobile:read')->group(function () {
+            Route::get('/customer/get-profile', [CustomerIdentityController::class, 'getProfile']);
+            Route::get('/customer/addresses/get-address-list', [CustomerAddressController::class, 'getAddressList']);
+            Route::get('/cart/get-cart-detail', [CustomerCartController::class, 'getCartDetail']);
+            Route::get('/checkout/get-available-schedules', [CustomerCheckoutController::class, 'getAvailableSchedules']);
+            Route::get('/orders/get-order-list', [CustomerOrderController::class, 'getOrderList']);
+            Route::get('/orders/get-order-detail', [CustomerOrderController::class, 'getOrderDetail']);
+            Route::get('/favorites/get-favorite-list', [CustomerEngagementController::class, 'getFavoriteList']);
+            Route::get('/support/get-ticket-list', [CustomerSupportController::class, 'getTicketList']);
+            Route::get('/support/get-ticket-detail', [CustomerSupportController::class, 'getTicketDetail']);
+            Route::get('/support/get-attachment', [CustomerSupportController::class, 'getAttachment']);
+        });
+
+        Route::middleware('ability:mobile-customer-access,mobile:write')->group(function () {
+            Route::post('/auth/logout', [CustomerIdentityController::class, 'logoutCustomer']);
+            Route::post('/customer/update-profile', [CustomerIdentityController::class, 'updateProfile']);
+            Route::post('/customer/addresses/create-address', [CustomerAddressController::class, 'createAddress']);
+            Route::post('/customer/addresses/update-address', [CustomerAddressController::class, 'updateAddress']);
+            Route::post('/customer/addresses/delete-address', [CustomerAddressController::class, 'deleteAddress']);
+            Route::post('/cart/add-cart-item', [CustomerCartController::class, 'addCartItem']);
+            Route::post('/cart/update-cart-item', [CustomerCartController::class, 'updateCartItem']);
+            Route::post('/cart/remove-cart-item', [CustomerCartController::class, 'removeCartItem']);
+            Route::post('/cart/clear-cart', [CustomerCartController::class, 'clearCart']);
+            Route::post('/cart/add-configured-product', [CustomerCheckoutController::class, 'addConfiguredProductToCart']);
+            Route::post('/checkout/validate-checkout', [CustomerOrderController::class, 'validateCheckout']);
+            Route::post('/checkout/get-checkout-summary', [CustomerCheckoutController::class, 'getCheckoutSummary']);
+            Route::post('/orders/place-customer-order', [CustomerCheckoutController::class, 'placeCustomerOrder']);
+            Route::post('/orders/cancel-order', [CustomerOrderController::class, 'cancelOrder']);
+            Route::post('/orders/reorder-order', [CustomerOrderController::class, 'reorderOrder']);
+            Route::post('/coupons/apply-coupon', [CustomerEngagementController::class, 'applyCoupon']);
+            Route::post('/favorites/update-favorite', [CustomerEngagementController::class, 'updateFavorite']);
+            Route::post('/support/create-ticket', [CustomerSupportController::class, 'createSupportTicket']);
+            Route::post('/support/reply-ticket', [CustomerSupportController::class, 'replyTicket']);
+            Route::post('/support/mark-messages-read', [CustomerSupportController::class, 'markMessagesRead']);
+            Route::post('/support/send-typing-indicator', [CustomerSupportController::class, 'sendTypingIndicator']);
+        });
+    });
+});
+
 Route::middleware(['auth:sanctum', 'ability:customer-access', 'customer.role'])->group(function () {
     Route::post('/v1/auth/logout', [CustomerIdentityController::class, 'logoutCustomer']);
     Route::get('/v1/customer/get-profile', [CustomerIdentityController::class, 'getProfile']);

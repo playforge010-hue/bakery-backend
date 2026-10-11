@@ -104,6 +104,41 @@ class CustomerCatalogController extends CustomerApiControllerBase
         return $this->successResponse('Category list loaded successfully.', $this->catalog->categoryCards());
     }
 
+    /** Return active, currently redeemable offers for the mobile storefront. */
+    public function getMobileOfferList(): JsonResponse
+    {
+        $offers = DB::table('coupons')
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+            })
+            ->orderBy('starts_at')
+            ->get()
+            ->map(fn ($offer) => [
+                'id' => $offer->id,
+                'code' => $offer->code,
+                'title' => $this->catalog->translated($offer->title_translations),
+                'description' => $this->catalog->translated($offer->description_translations),
+                'discount_type' => $offer->discount_type,
+                'discount_value' => (float) $offer->discount_value,
+                'maximum_discount' => $offer->max_discount_amount !== null
+                    ? (float) $offer->max_discount_amount
+                    : null,
+                'minimum_order_amount' => $offer->minimum_order_amount !== null
+                    ? (float) $offer->minimum_order_amount
+                    : null,
+                'applies_to' => $offer->applies_to_fulfillment_type,
+                'expires_at' => $offer->ends_at,
+            ])
+            ->values();
+
+        return $this->successResponse('Offer list loaded successfully.', $offers);
+    }
+
     /** Return available products filtered by the supplied query. */
     public function getProductList(CustomerProductListRequest $request): JsonResponse
     {
