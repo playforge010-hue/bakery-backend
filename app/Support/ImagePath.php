@@ -25,20 +25,17 @@ final class ImagePath
             return rtrim($bundledCatalog['base_url'], '/').'/'.$filename;
         }
 
+        $disk = config('imagepath.disk');
         $configuredBaseUrl = config('imagepath.public_base_url');
+        $appUrl = rtrim(config('app.url'), '/');
+        $isLocalDisk = config("filesystems.disks.{$disk}.driver") === 'local';
+
+        if ($isLocalDisk && (! $configuredBaseUrl || rtrim($configuredBaseUrl, '/') === $appUrl.'/storage')) {
+            return $appUrl.'/media/'.ltrim($path, '/');
+        }
 
         if ($configuredBaseUrl) {
             return rtrim($configuredBaseUrl, '/').'/'.ltrim($path, '/');
-        }
-
-        $disk = config('imagepath.disk');
-
-        if (config("filesystems.disks.{$disk}.driver") === 'local' && ! app()->runningInConsole()) {
-            $relativePath = Str::startsWith($path, 'storage/')
-                ? Str::after($path, 'storage/')
-                : ltrim($path, '/');
-
-            return rtrim(request()->getSchemeAndHttpHost(), '/').'/storage/'.$relativePath;
         }
 
         return Storage::disk($disk)->url($path);
