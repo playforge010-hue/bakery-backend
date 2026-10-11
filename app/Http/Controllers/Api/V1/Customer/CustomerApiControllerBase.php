@@ -83,7 +83,13 @@ abstract class CustomerApiControllerBase extends Controller
         $items = DB::table('cart_items')
             ->join('products', 'products.id', '=', 'cart_items.product_id')
             ->where('cart_items.cart_id', $cart->id)
-            ->select('cart_items.*', 'products.name_translations', 'products.main_image_path')
+            ->select(
+                'cart_items.*',
+                'products.id as product_id',
+                'products.slug as product_slug',
+                'products.name_translations',
+                'products.main_image_path'
+            )
             ->get()
             ->values();
 
@@ -93,6 +99,7 @@ abstract class CustomerApiControllerBase extends Controller
             ->where('cart_items.cart_id', $cart->id)
             ->select(
                 'cart_items.id as cart_item_id',
+                'product_addons.id as addon_id',
                 'product_addons.name_translations',
                 'cart_item_addons.quantity',
                 'cart_item_addons.line_total'
@@ -101,21 +108,29 @@ abstract class CustomerApiControllerBase extends Controller
             ->groupBy('cart_item_id');
 
         $items = $items->map(fn ($item) => [
-                'id' => $item->id,
-                'name' => $this->catalog->translated($item->name_translations),
-                'image_url' => ImagePath::url($item->main_image_path),
-                'variant' => collect(json_decode($item->customization_summary_json ?: '{}', true))->filter()->implode(' · '),
-                'quantity' => $item->quantity,
-                'line_total' => (float) $item->line_total,
-                'cake_message' => $item->cake_message,
-                'addons' => $selectedAddons->get($item->id, collect())
-                    ->map(fn ($addon) => [
-                        'name' => $this->catalog->translated($addon->name_translations),
-                        'quantity' => (int) $addon->quantity,
-                        'line_total' => (float) $addon->line_total,
-                    ])
-                    ->values(),
-            ])
+            'id' => $item->id,
+            'product_id' => (int) $item->product_id,
+            'slug' => $item->product_slug,
+            'name' => $this->catalog->translated($item->name_translations),
+            'image_url' => ImagePath::url($item->main_image_path),
+            'unit_price' => (float) $item->unit_price,
+            'addon_total' => (float) $item->addon_total,
+            'variant' => collect(json_decode($item->customization_summary_json ?: '{}', true))->filter()->implode(' · '),
+            'product_variant_id' => $item->product_variant_id,
+            'flavour_id' => $item->selected_flavour_id,
+            'egg_option' => $item->egg_option,
+            'quantity' => $item->quantity,
+            'line_total' => (float) $item->line_total,
+            'cake_message' => $item->cake_message,
+            'addons' => $selectedAddons->get($item->id, collect())
+                ->map(fn ($addon) => [
+                    'id' => (int) $addon->addon_id,
+                    'name' => $this->catalog->translated($addon->name_translations),
+                    'quantity' => (int) $addon->quantity,
+                    'line_total' => (float) $addon->line_total,
+                ])
+                ->values(),
+        ])
             ->values();
 
         return [
@@ -155,21 +170,50 @@ abstract class CustomerApiControllerBase extends Controller
     protected function orders(): array
     {
         $user = $this->customerUser();
-
-        return DB::table('orders')
+        $orders = DB::table('orders')
             ->where('user_id', $user->id)
             ->whereNull('deleted_at')
             ->orderByDesc('placed_at')
+            ->get();
+
+        if ($orders->isEmpty()) {
+            return [];
+        }
+
+        $itemsByOrder = DB::table('order_items')
+            ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
+            ->whereIn('order_items.order_id', $orders->pluck('id'))
+            ->select(
+                'order_items.id',
+                'order_items.order_id',
+                'order_items.product_name',
+                'order_items.quantity',
+                'order_items.line_total',
+                'order_items.variant_name',
+                'products.main_image_path'
+            )
             ->get()
-            ->map(function ($order) {
-                $items = DB::table('order_items')->where('order_id', $order->id)->pluck('product_name')->implode(', ');
+            ->groupBy('order_id');
+
+        return $orders
+            ->map(function ($order) use ($itemsByOrder) {
+                $orderItems = $itemsByOrder->get($order->id, collect());
 
                 return [
                     'order_number' => $order->order_number,
                     'status' => Str::headline($order->order_status),
                     'placed_at' => $order->placed_at,
                     'total' => (float) $order->grand_total,
-                    'items' => $items,
+                    'items' => $orderItems->pluck('product_name')->implode(', '),
+                    'items_count' => (int) $orderItems->sum('quantity'),
+                    'item_details' => $orderItems->map(fn ($item) => [
+                        'id' => (int) $item->id,
+                        'name' => $item->product_name,
+                        'variant' => $item->variant_name,
+                        'quantity' => (int) $item->quantity,
+                        'line_total' => (float) $item->line_total,
+                        'image_url' => ImagePath::url($item->main_image_path),
+                    ])->values(),
                     'fulfillment_type' => Str::headline($order->fulfillment_type),
                 ];
             })

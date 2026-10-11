@@ -5,8 +5,8 @@ Use this as the living tracker for the rebuild. Update it after every meaningful
 ## Current Status
 
 Project stage: Customer web ordering flow connected to MySQL APIs; operational and launch work remains
-Current phase: Customer flow integration, hardening, and operations
-Last updated: 2026-10-07
+Current phase: Customer web hardening and Flutter mobile app foundation
+Last updated: 2026-10-11
 
 Coding standards alignment update (2026-10-07): the previously checked-in `docs/CODING_STANDARDS.md` described TeacherWay's separate Flutter/parent/teacher product and conflicted with Dwarkesh's API contract. Replaced it with Dwarkesh standards following the reference project's request lifecycle, layer boundaries, validation, PHPDoc, and workflow structure while retaining the bakery scope, Laravel 12 conventions, GET/POST routes, Gujarati/English/Hindi, Dwarkesh response envelope, and `config/imagepath.php`. Added customer Form Requests for address, cart, location, coupon, and catalog inputs; converted those filters/mutations to validated data; routed customer API paths directly to focused controllers; removed the unused customer controller facade; introduced fixed-value enums; added centralized Gujarati-default `X-Locale` handling; and made `/orders/place-order` a compatibility alias to the repricing checkout action. Sanctum security update: customer tokens receive `customer-access`; admin tokens receive `admin-access`, `admin:read`, and `admin:write`. Protected routes enforce matching token abilities and account roles, admin middleware checks read/write scope by HTTP method, API authentication/ability failures use the standard error envelope, and broadcast channels enforce matching scope, active status, and ownership. Existing admin tokens need a fresh login for the new ability. Updated API and coding standards documentation. PHP syntax lint passed for 46 changed PHP paths; Laravel route listing resolved 107 API routes and showed the customer/admin ability middleware. No tests were run. The pre-existing rebuild was pushed to `origin/main` as `5f4b2d1` before this standards work; follow-up alignment edits remain local.
 
@@ -18,7 +18,7 @@ Customer API architecture update (2026-10-05): `CustomerAppController` now forwa
 - [x] Marketplace and multi-store features rejected
 - [x] Laravel API is the source of truth
 - [x] Next.js website is active frontend priority
-- [x] Flutter is paused
+- [x] Flutter customer app is active; admin remains in the web panel
 - [x] Only GET and POST routes allowed
 - [x] No resource routes/controllers
 - [x] Consistent API response trait required
@@ -39,6 +39,9 @@ Customer API architecture update (2026-10-05): `CustomerAppController` now forwa
 | 6 | Admin Operations | In Progress | 7-9 days | Admin authentication, dashboard, operations APIs and responsive management screens exist; production access/security review remains |
 | 7 | Next.js Website | In Progress | 12-15 days | Customer and admin routes are connected; mobile/desktop staging review and provider-dependent flows remain |
 | 8 | QA And Launch Prep | Not Started | 7-10 days | Local static and HTTP smoke checks pass; production infrastructure and launch rehearsal remain. No tests run per current user instruction |
+| 9 | Flutter Customer App | In Progress | 23-37 days | 20 customer screens plus animated splash; mobile-specific Sanctum API, OTP flow, five-tab navigation, and release work are tracked in the Flutter repository |
+
+Flutter implementation plan and live task checklist: [MOBILE_APP_PLAN.md](../../dwarkesh_bakers_flutter/docs/MOBILE_APP_PLAN.md) and [MOBILE_APP_TRACKER.md](../../dwarkesh_bakers_flutter/docs/MOBILE_APP_TRACKER.md). The Flutter source is in `D:\laravel\dwarkesh_bakers_flutter`.
 
 See [DEPLOYMENT_READINESS.md](DEPLOYMENT_READINESS.md) for the verified remaining-work checklist and launch blockers.
 
@@ -602,3 +605,15 @@ Verification:
 - Changed the production environment template to use a Laravel log stack with stderr and daily files. Errors at warning level and above will be available in Railway logs and under `/app/storage/logs/laravel-YYYY-MM-DD.log` once the backend service variables are updated and deployed.
 - Persistent log history requires a Railway volume mounted at `/app/storage/logs`; otherwise the container filesystem is ephemeral. Expected validation/authentication failures remain HTTP responses rather than log exceptions.
 - Railway CLI is unauthenticated in this workspace, so the live service variables and volume still require dashboard setup.
+
+### 2026-10-11 - Allow Vercel frontend origins
+
+- Added the stable Vercel production domain and current deployment domain to the backend `.env.example` and local ignored Railway env copy. The current live CORS preflight did not return an allowed-origin header for the production domain.
+- Railway CLI remains unauthenticated, so the live `CORS_ALLOWED_ORIGINS` variable must be updated in the Railway backend service and deployed. Keep the existing local origins if local/mobile testing is still needed.
+
+### 2026-10-11 - Mobile cart and order history response alignment
+
+- Added the product, variant, flavour, price, and add-on identifiers needed to edit cart lines in the Flutter app without exposing full database rows.
+- Added image URLs and quantities to customer order history cards with one batched item query rather than one query per order.
+- Updated reordering to copy saved add-ons, customization, and reference uploads into the cart in a transaction, while checking whether a previously selected flavour is still available.
+- Verification: PHP syntax and Pint checks passed for both modified controllers; the existing Laravel suite passed (4 tests, 8 assertions). Live order placement and reordering still need a post-deploy customer check.
