@@ -176,12 +176,18 @@ Route::middleware(['auth:sanctum', 'ability:customer-access', 'customer.role'])-
     Route::post('/v1/favorites/update-favorite', [CustomerEngagementController::class, 'updateFavorite']);
     Route::get('/v1/support/get-ticket-list', [CustomerSupportController::class, 'getTicketList']);
     Route::get('/v1/support/get-ticket-detail', [CustomerSupportController::class, 'getTicketDetail']);
-    Route::get('/v1/support/get-attachment', [CustomerSupportController::class, 'getAttachment']);
     Route::post('/v1/support/create-ticket', [CustomerSupportController::class, 'createSupportTicket']);
     Route::post('/v1/support/reply-ticket', [CustomerSupportController::class, 'replyTicket']);
     Route::post('/v1/support/mark-messages-read', [CustomerSupportController::class, 'markMessagesRead']);
     Route::post('/v1/support/send-typing-indicator', [CustomerSupportController::class, 'sendTypingIndicator']);
 });
+
+// The attachment URL is shared by customer and admin message payloads. The
+// request and chat service authorize access to the parent conversation.
+Route::middleware('auth:sanctum')->get(
+    '/v1/support/get-attachment',
+    [CustomerSupportController::class, 'getAttachment']
+);
 
 Route::middleware(['auth:sanctum', 'ability:admin-access', 'admin.role:owner,admin,staff'])->prefix('v1/admin/support')->group(function () {
     Route::get('/get-ticket-list', [AdminSupportController::class, 'getTicketList']);
