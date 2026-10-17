@@ -2,22 +2,26 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
-use App\Enums\OrderStatus;
+use App\Actions\Admin\GetOrderChanges;
 use App\Actions\Admin\WriteAdminAuditLog;
 use App\Actions\BroadcastOrderChange;
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\AdminOrderActionRequest;
 use App\Http\Requests\Api\V1\Admin\DispatcherOrdersRequest;
+use App\Http\Requests\Api\V1\Admin\GetOrderChangesRequest;
 use App\Http\Requests\Api\V1\Admin\OrderStatusRequest;
 use App\Http\Resources\Api\V1\Admin\OrderResource;
 use App\Models\Order;
-use App\Services\Admin\AdminOrderService;
 use App\Services\Admin\AdminDateRangeService;
 use App\Services\Admin\AdminDispatcherService;
+use App\Services\Admin\AdminOrderExportService;
+use App\Services\Admin\AdminOrderService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /** Provide filtered order operations for the kitchen and delivery/takeaway staff. */
@@ -59,12 +63,26 @@ class AdminOrderController extends Controller
         ]);
     }
 
+    /** Return committed order changes after a cursor, or establish an initial baseline. */
+    public function getOrderChanges(
+        GetOrderChangesRequest $request,
+        GetOrderChanges $changes
+    ): JsonResponse {
+        $validated = $request->validated();
+        $afterId = isset($validated['after_id']) ? (int) $validated['after_id'] : null;
+        $result = $changes->execute($afterId);
+
+        return $this->successResponse('Order changes loaded.', $result['events'], [
+            'cursor' => $result['cursor'],
+            'has_more' => $result['has_more'],
+        ]);
+    }
+
     /** Filter and paginate orders by status, fulfillment and customer/order search text. */
     public function getOrderList(
         AdminOrderActionRequest $request,
         AdminDateRangeService $dateRanges
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $query = $this->filteredOrderQuery($request, $dateRanges);
         $rows = $query->paginate($request->integer('per_page', 25));
 
@@ -80,8 +98,8 @@ class AdminOrderController extends Controller
     public function exportOrderList(
         AdminOrderActionRequest $request,
         AdminDateRangeService $dateRanges,
-        \App\Services\Admin\AdminOrderExportService $exports
-    ): StreamedResponse|\Symfony\Component\HttpFoundation\Response {
+        AdminOrderExportService $exports
+    ): StreamedResponse|Response {
         return $exports->download(
             $this->filteredOrderQuery($request, $dateRanges),
             $request->validated()

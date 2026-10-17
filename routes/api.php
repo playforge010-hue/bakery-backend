@@ -205,6 +205,7 @@ Route::middleware(['auth:sanctum', 'ability:admin-access', 'admin.role:owner,adm
 
     Route::get('/orders/get-order-list', [AdminOrderController::class, 'getOrderList']);
     Route::get('/orders/get-dispatcher-orders', [AdminOrderController::class, 'getDispatcherOrders']);
+    Route::get('/orders/get-order-changes', [AdminOrderController::class, 'getOrderChanges']);
     Route::get('/orders/export-order-list', [AdminOrderController::class, 'exportOrderList']);
     Route::get('/orders/get-order-detail', [AdminOrderController::class, 'getOrderDetail']);
     Route::post('/orders/update-order-status', [AdminOrderController::class, 'updateOrderStatus']);

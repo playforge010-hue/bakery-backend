@@ -41,6 +41,7 @@ class EnsureAdminRole
                 'dashboard/get-dashboard-summary',
                 'orders/get-order-list',
                 'orders/get-dispatcher-orders',
+                'orders/get-order-changes',
                 'orders/get-order-detail',
                 'orders/export-order-list',
                 'categories/get-category-list',
