@@ -628,3 +628,7 @@ Verification:
 
 - The cache migration now checks `cache` and `cache_locks` independently before creating them. This lets a partially completed MySQL migration continue without deleting existing cache data.
 - Verify the existing table columns if cache operations still fail after deployment. Do not roll back this migration on a database with pre-existing cache tables without first checking what the rollback would remove.
+
+### 2026-10-17 - Railway view cache startup recovery
+
+- Added the tracked `resources/views` directory required by Laravel's `view:cache` step during `php artisan optimize`. The API currently has no Blade templates, but Laravel still expects the source directory to exist.
