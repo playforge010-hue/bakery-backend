@@ -623,3 +623,8 @@ Verification:
 - Profile updates now report storage write failure instead of returning a false success response.
 - The profile and user table updates run together in a database transaction. The previous avatar is removed only after the new profile is saved; a newly uploaded file is cleaned up if the database update fails.
 - Documented the exact persistent volume mount for Railway uploads. Existing files on the ephemeral container must be re-uploaded after the volume is attached.
+
+### 2026-10-17 - Cache migration recovery
+
+- The cache migration now checks `cache` and `cache_locks` independently before creating them. This lets a partially completed MySQL migration continue without deleting existing cache data.
+- Verify the existing table columns if cache operations still fail after deployment. Do not roll back this migration on a database with pre-existing cache tables without first checking what the rollback would remove.
