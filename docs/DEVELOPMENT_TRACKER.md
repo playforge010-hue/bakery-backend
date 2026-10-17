@@ -617,3 +617,9 @@ Verification:
 - Added image URLs and quantities to customer order history cards with one batched item query rather than one query per order.
 - Updated reordering to copy saved add-ons, customization, and reference uploads into the cart in a transaction, while checking whether a previously selected flavour is still available.
 - Verification: PHP syntax and Pint checks passed for both modified controllers; the existing Laravel suite passed (4 tests, 8 assertions). Live order placement and reordering still need a post-deploy customer check.
+
+### 2026-10-17 - Profile photo upload reliability
+
+- Profile updates now report storage write failure instead of returning a false success response.
+- The profile and user table updates run together in a database transaction. The previous avatar is removed only after the new profile is saved; a newly uploaded file is cleaned up if the database update fails.
+- Documented the exact persistent volume mount for Railway uploads. Existing files on the ephemeral container must be re-uploaded after the volume is attached.

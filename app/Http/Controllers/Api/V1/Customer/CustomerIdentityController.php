@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 /** Customer-facing identity API operations. */
 class CustomerIdentityController extends CustomerApiControllerBase
@@ -106,8 +107,7 @@ class CustomerIdentityController extends CustomerApiControllerBase
     private function verifyCustomerOtp(
         VerifyCustomerOtpRequest $request,
         bool $isMobileClient
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $validated = $request->validated();
         $mobileNumber = (string) $validated['mobile_number'];
         $otp = (string) $validated['otp'];
@@ -202,27 +202,53 @@ class CustomerIdentityController extends CustomerApiControllerBase
     {
         $user = $this->customerUser();
         $validated = $request->validated();
-        $avatarPath = $user->avatar_path;
+        $previousAvatarPath = $user->avatar_path;
+        $avatarPath = $previousAvatarPath;
+        $newAvatarPath = null;
+        $disk = config('imagepath.disk', 'public');
+
         if ($request->hasFile('avatar')) {
-            $disk = config('imagepath.disk', 'public');
             $newAvatarPath = $request->file('avatar')->store(config('imagepath.directories.user_avatars'), $disk);
-            if ($avatarPath) {
-                Storage::disk($disk)->delete($avatarPath);
+
+            if (! is_string($newAvatarPath) || $newAvatarPath === '') {
+                Log::error('Customer profile photo could not be stored.', [
+                    'user_id' => $user->id,
+                    'disk' => $disk,
+                ]);
+
+                return $this->errorResponse('Your photo could not be saved. Please try again.', [], [], 500);
             }
+
             $avatarPath = $newAvatarPath;
         }
-        DB::table('users')->where('id', $user->id)->update([
-            'name' => $validated['name'] ?? $user->name,
-            'email' => $validated['email'] ?? $user->email,
-            'avatar_path' => $avatarPath,
-            'updated_at' => now(),
-        ]);
-        DB::table('customer_profiles')->where('user_id', $user->id)->update([
-            'full_name' => $validated['name'] ?? $user->name,
-            'email' => $validated['email'] ?? $user->email,
-            'preferred_language' => $validated['preferred_language'] ?? 'gu',
-            'updated_at' => now(),
-        ]);
+
+        try {
+            DB::transaction(function () use ($user, $validated, $avatarPath): void {
+                DB::table('users')->where('id', $user->id)->update([
+                    'name' => $validated['name'] ?? $user->name,
+                    'email' => $validated['email'] ?? $user->email,
+                    'avatar_path' => $avatarPath,
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('customer_profiles')->where('user_id', $user->id)->update([
+                    'full_name' => $validated['name'] ?? $user->name,
+                    'email' => $validated['email'] ?? $user->email,
+                    'preferred_language' => $validated['preferred_language'] ?? 'gu',
+                    'updated_at' => now(),
+                ]);
+            });
+        } catch (Throwable $exception) {
+            if ($newAvatarPath) {
+                Storage::disk($disk)->delete($newAvatarPath);
+            }
+
+            throw $exception;
+        }
+
+        if ($newAvatarPath && $previousAvatarPath) {
+            Storage::disk($disk)->delete($previousAvatarPath);
+        }
 
         return $this->successResponse('Profile updated successfully.', [
             'name' => $validated['name'] ?? $user->name,
