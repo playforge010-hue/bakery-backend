@@ -632,3 +632,9 @@ Verification:
 ### 2026-10-17 - Railway view cache startup recovery
 
 - Added the tracked `resources/views` directory required by Laravel's `view:cache` step during `php artisan optimize`. The API currently has no Blade templates, but Laravel still expects the source directory to exist.
+
+### 2026-10-17 - Public image delivery and database sessions
+
+- A public uploaded avatar returned HTTP 500 while an API endpoint returned HTTP 200. The root web route also returned HTTP 500.
+- The backend uses `SESSION_DRIVER=database` and web routes pass through Laravel's session middleware, but no migration created the `sessions` table. Added the standard session table migration with an existence guard to support databases where it was created manually.
+- The deployed service needs to run `php artisan migrate --force` before this can be verified against the public `/media` URL.
