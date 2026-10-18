@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\Customer\CustomerProductListRequest;
 use App\Http\Resources\Api\V1\Customer\CustomerBannerResource;
 use App\Models\Banner;
 use App\Models\BusinessSetting;
+use App\Services\CustomerStoreAvailability;
 use App\Support\ImagePath;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +57,7 @@ class CustomerCatalogController extends CustomerApiControllerBase
     }
 
     /** Return admin-managed bakery, promotion and catalog data for the storefront. */
-    public function getHomeData(): JsonResponse
+    public function getHomeData(CustomerStoreAvailability $availability): JsonResponse
     {
         $business = BusinessSetting::query()->first();
         $banners = Banner::query()
@@ -84,6 +85,7 @@ class CustomerCatalogController extends CustomerApiControllerBase
                 'delivery_available' => (bool) ($business?->delivery_available ?? false),
                 'takeaway_available' => (bool) ($business?->takeaway_available ?? false),
                 'max_delivery_distance_km' => (float) ($business?->max_delivery_distance_km ?? 0),
+                'availability' => $availability->current($business),
             ],
             'banners' => $banners,
             'categories' => $this->catalog->categoryCards(),
