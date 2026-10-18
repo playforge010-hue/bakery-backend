@@ -13,6 +13,8 @@ class CustomerProductListRequest extends ApiFormRequest
         return [
             'search' => ['nullable', 'string', 'max:120'],
             'category' => ['nullable', 'string', 'max:120'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:48'],
         ];
     }
 }

@@ -167,58 +167,99 @@ abstract class CustomerApiControllerBase extends Controller
     }
 
     /** Return order summary cards owned by the authenticated customer. */
-    protected function orders(): array
+    protected function orders(?int $perPage = null, int $page = 1, array $filters = []): array
     {
         $user = $this->customerUser();
-        $orders = DB::table('orders')
+        $ordersQuery = DB::table('orders')
             ->where('user_id', $user->id)
             ->whereNull('deleted_at')
-            ->orderByDesc('placed_at')
-            ->get();
+            ->orderByDesc('placed_at');
 
-        if ($orders->isEmpty()) {
-            return [];
+        $finishedStatuses = ['delivered', 'picked_up', 'cancelled', 'rejected'];
+
+        if (($filters['filter'] ?? 'all') === 'active') {
+            $ordersQuery->whereNotIn('order_status', $finishedStatuses);
+        } elseif (($filters['filter'] ?? 'all') === 'past') {
+            $ordersQuery->whereIn('order_status', $finishedStatuses);
         }
 
-        $itemsByOrder = DB::table('order_items')
-            ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
-            ->whereIn('order_items.order_id', $orders->pluck('id'))
-            ->select(
-                'order_items.id',
-                'order_items.order_id',
-                'order_items.product_name',
-                'order_items.quantity',
-                'order_items.line_total',
-                'order_items.variant_name',
-                'products.main_image_path'
-            )
-            ->get()
-            ->groupBy('order_id');
+        if (! empty($filters['search'])) {
+            $search = trim($filters['search']);
 
-        return $orders
-            ->map(function ($order) use ($itemsByOrder) {
-                $orderItems = $itemsByOrder->get($order->id, collect());
+            $ordersQuery->where(function ($query) use ($search) {
+                $query->where('order_number', 'like', '%'.$search.'%')
+                    ->orWhere('order_status', 'like', '%'.$search.'%')
+                    ->orWhereExists(function ($itemQuery) use ($search) {
+                        $itemQuery->selectRaw('1')
+                            ->from('order_items')
+                            ->whereColumn('order_items.order_id', 'orders.id')
+                            ->where('order_items.product_name', 'like', '%'.$search.'%');
+                    });
+            });
+        }
 
-                return [
-                    'order_number' => $order->order_number,
-                    'status' => Str::headline($order->order_status),
-                    'placed_at' => $order->placed_at,
-                    'total' => (float) $order->grand_total,
-                    'items' => $orderItems->pluck('product_name')->implode(', '),
-                    'items_count' => (int) $orderItems->sum('quantity'),
-                    'item_details' => $orderItems->map(fn ($item) => [
-                        'id' => (int) $item->id,
-                        'name' => $item->product_name,
-                        'variant' => $item->variant_name,
-                        'quantity' => (int) $item->quantity,
-                        'line_total' => (float) $item->line_total,
-                        'image_url' => ImagePath::url($item->main_image_path),
-                    ])->values(),
-                    'fulfillment_type' => Str::headline($order->fulfillment_type),
-                ];
-            })
-            ->values()
-            ->all();
+        $paginator = $perPage === null
+            ? null
+            : $ordersQuery->paginate($perPage, ['*'], 'page', $page);
+        $orders = $paginator?->getCollection() ?? $ordersQuery->get();
+
+        if ($orders->isEmpty()) {
+            $orderCards = [];
+        } else {
+            $itemsByOrder = DB::table('order_items')
+                ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
+                ->whereIn('order_items.order_id', $orders->pluck('id'))
+                ->select(
+                    'order_items.id',
+                    'order_items.order_id',
+                    'order_items.product_name',
+                    'order_items.quantity',
+                    'order_items.line_total',
+                    'order_items.variant_name',
+                    'products.main_image_path'
+                )
+                ->get()
+                ->groupBy('order_id');
+
+            $orderCards = $orders
+                ->map(function ($order) use ($itemsByOrder) {
+                    $orderItems = $itemsByOrder->get($order->id, collect());
+
+                    return [
+                        'order_number' => $order->order_number,
+                        'status' => Str::headline($order->order_status),
+                        'placed_at' => $order->placed_at,
+                        'total' => (float) $order->grand_total,
+                        'items' => $orderItems->pluck('product_name')->implode(', '),
+                        'items_count' => (int) $orderItems->sum('quantity'),
+                        'item_details' => $orderItems->map(fn ($item) => [
+                            'id' => (int) $item->id,
+                            'name' => $item->product_name,
+                            'variant' => $item->variant_name,
+                            'quantity' => (int) $item->quantity,
+                            'line_total' => (float) $item->line_total,
+                            'image_url' => ImagePath::url($item->main_image_path),
+                        ])->values(),
+                        'fulfillment_type' => Str::headline($order->fulfillment_type),
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        if ($paginator === null) {
+            return $orderCards;
+        }
+
+        return [
+            'items' => $orderCards,
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ];
     }
 
     /** Resolve the current authenticated customer for ownership checks. */

@@ -6,6 +6,7 @@ use App\Actions\BroadcastOrderChange;
 use App\Enums\OrderStatus;
 use App\Http\Requests\Api\V1\Customer\CancelCustomerOrderRequest;
 use App\Http\Requests\Api\V1\Customer\GetCustomerOrderDetailRequest;
+use App\Http\Requests\Api\V1\Customer\GetCustomerOrderListRequest;
 use App\Http\Requests\Api\V1\Customer\ReorderCustomerOrderRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -31,9 +32,31 @@ class CustomerOrderController extends CustomerApiControllerBase
     }
 
     /** Return order history cards for the authenticated customer. */
-    public function getOrderList(): JsonResponse
+    public function getOrderList(GetCustomerOrderListRequest $request): JsonResponse
     {
-        return $this->successResponse('Order history loaded successfully.', $this->orders());
+        $filters = $request->validated();
+        $isPaginated = $request->has('page') || $request->has('per_page');
+        $orders = $this->orders(
+            $isPaginated ? (int) ($filters['per_page'] ?? 10) : null,
+            (int) ($filters['page'] ?? 1),
+            $filters
+        );
+
+        if ($isPaginated) {
+            $pagination = $orders['pagination'];
+            $orders = $orders['items'];
+
+            return $this->successResponse(
+                'Order history loaded successfully.',
+                $orders,
+                [
+                    'pagination' => $pagination,
+                    'counts' => $this->orderCounts(),
+                ]
+            );
+        }
+
+        return $this->successResponse('Order history loaded successfully.', $orders);
     }
 
     /** Return detail and tracking history for a customer-owned order. */
@@ -276,5 +299,26 @@ class CustomerOrderController extends CustomerApiControllerBase
         }
 
         return null;
+    }
+
+    /** Return status totals for the customer's order history tabs. */
+    private function orderCounts(): array
+    {
+        $finishedStatuses = [
+            OrderStatus::Delivered->value,
+            OrderStatus::PickedUp->value,
+            OrderStatus::Cancelled->value,
+            OrderStatus::Rejected->value,
+        ];
+
+        $orders = DB::table('orders')
+            ->where('user_id', $this->customerUser()->id)
+            ->whereNull('deleted_at');
+
+        return [
+            'all' => (clone $orders)->count(),
+            'active' => (clone $orders)->whereNotIn('order_status', $finishedStatuses)->count(),
+            'past' => (clone $orders)->whereIn('order_status', $finishedStatuses)->count(),
+        ];
     }
 }

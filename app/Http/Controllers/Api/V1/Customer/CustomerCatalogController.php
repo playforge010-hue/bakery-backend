@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1\Customer;
 
-use App\Http\Resources\Api\V1\Customer\CustomerBannerResource;
 use App\Http\Requests\Api\V1\Customer\CustomerProductDetailRequest;
 use App\Http\Requests\Api\V1\Customer\CustomerProductListRequest;
+use App\Http\Resources\Api\V1\Customer\CustomerBannerResource;
 use App\Models\Banner;
 use App\Models\BusinessSetting;
 use App\Support\ImagePath;
@@ -142,13 +142,22 @@ class CustomerCatalogController extends CustomerApiControllerBase
     public function getProductList(CustomerProductListRequest $request): JsonResponse
     {
         $filters = $request->validated();
+        $isPaginated = $request->has('page') || $request->has('per_page');
+        $products = $isPaginated
+            ? $this->catalog->paginatedProductCards($filters, (int) ($filters['per_page'] ?? 12))
+            : null;
 
-        return $this->successResponse('Product list loaded successfully.', $this->catalog->productCards($filters), [
-            'filters' => [
-                'search' => $filters['search'] ?? null,
-                'category' => $filters['category'] ?? null,
-            ],
-        ]);
+        return $this->successResponse(
+            'Product list loaded successfully.',
+            $products['items'] ?? $this->catalog->productCards($filters),
+            array_filter([
+                'filters' => [
+                    'search' => $filters['search'] ?? null,
+                    'category' => $filters['category'] ?? null,
+                ],
+                'pagination' => $products['pagination'] ?? null,
+            ], fn ($value) => $value !== null)
+        );
     }
 
     /** Return one product with its customer customization options. */

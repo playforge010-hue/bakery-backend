@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Resources\Api\V1\Customer\CustomerCategoryResource;
 use App\Http\Resources\Api\V1\Customer\CustomerProductCardResource;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 /** Read and shape the customer-facing catalog without exposing database records. */
@@ -23,7 +24,40 @@ class CustomerCatalogService
     /** Return available product cards filtered by the existing search/category query contract. */
     public function productCards(array $filters = []): array
     {
-        $query = DB::table('products')->where('is_available', true)->whereNull('deleted_at')->orderBy('sort_order');
+        return $this->productQuery($filters)
+            ->get()
+            ->map(fn ($product) => $this->productCard($product))
+            ->values()
+            ->all();
+    }
+
+    /** Return one filtered product page and its navigation metadata. */
+    public function paginatedProductCards(array $filters, int $perPage): array
+    {
+        $products = $this->productQuery($filters)
+            ->paginate($perPage, ['*'], 'page', (int) ($filters['page'] ?? 1));
+
+        return [
+            'items' => $products->getCollection()
+                ->map(fn ($product) => $this->productCard($product))
+                ->values()
+                ->all(),
+            'pagination' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+            ],
+        ];
+    }
+
+    /** Build the filtered query shared by regular and paginated catalog reads. */
+    private function productQuery(array $filters): Builder
+    {
+        $query = DB::table('products')
+            ->where('is_available', true)
+            ->whereNull('deleted_at')
+            ->orderBy('sort_order');
 
         if (! empty($filters['search'])) {
             $query->where('name_translations', 'like', '%'.strtolower((string) $filters['search']).'%');
@@ -38,7 +72,7 @@ class CustomerCatalogService
             $query->where('is_featured', true);
         }
 
-        return $query->get()->map(fn ($product) => $this->productCard($product))->values()->all();
+        return $query;
     }
 
     /** Project one catalog record into the frontend's established product-card shape. */
